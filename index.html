@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোনটি চোখে প্রতিসারক মাধ্যম হিসাবে কাজ করে না?",
+          options: {
+            a: "অ্যাকুয়াস হিউমার",
+            b: "লেন্স",
+            c: "রেটিনা",
+            d: "কর্নিয়া",
+          },
+          correct: "c",
+          explanation:
+            "<p>চোখের মধ্যে আলো প্রবেশ করে এবং বিভিন্ন স্বচ্ছ মাধ্যমের মধ্য দিয়ে প্রতিসরিত হয়ে রেটিনায় প্রতিবিম্ব তৈরি করে। এই প্রতিসারক মাধ্যমগুলো হলো <strong>কর্নিয়া (Cornea)</strong>, <strong>অ্যাকুয়াস হিউমার (Aqueous humor)</strong>, <strong>লেন্স (Lens)</strong>, এবং <strong>ভিট্রিয়াস হিউমার (Vitreous humor)</strong>। <strong>রেটিনা (Retina)</strong> হলো চোখের সেই অংশ যেখানে আলোক সংকেত গ্রহণ করা হয় এবং প্রতিবিম্ব তৈরি হয়, এটি নিজেই কোনো প্রতিসারক মাধ্যম নয়।</p>",
+        },
+        {
+          id: 2,
+          question: "চোখের রেটিনার ভিতর সবচেয়ে আলোক সংবেদী অংশের নাম কী?",
+          options: {
+            a: "পীতবিন্দু",
+            b: "অপটিক স্নায়ু",
+            c: "ফোবিয়া সেন্ট্রালিস",
+            d: "অন্ধবিন্দু",
+          },
+          correct: "c",
+          explanation:
+            "<p>চোখের রেটিনার (Retina) মধ্যে সবচেয়ে আলোক সংবেদী এবং তীক্ষ্ণ দৃষ্টির জন্য দায়ী অংশটি হলো <strong>ফোবিয়া সেন্ট্রালিস (Fovea centralis)</strong>। এটি ম্যাকুলা লুটিয়ার (Macula lutea) কেন্দ্রে অবস্থিত এবং এখানে কোণ কোষের (Cone cells) ঘনত্ব সবচেয়ে বেশি থাকে, যা উজ্জ্বল আলোতে এবং রঙীন বস্তুর সূক্ষ্ম বিবরণ দেখতে সাহায্য করে। পীতবিন্দু (Yellow spot) বা ম্যাকুলা লুটিয়া হলো ফোবিয়া সেন্ট্রালিসের চারপাশের অঞ্চল। অন্ধবিন্দুতে কোনো আলোক সংবেদী কোষ থাকে না।</p>",
+        },
+        {
+          id: 3,
+          question: "চোখের রেটিনার যে অংশ আলোকসংবেদী নয় তাকে বলে?",
+          options: {
+            a: "অন্ধ বিন্দু",
+            b: "আলোক বিন্দু",
+            c: "পীত বিন্দু",
+            d: "সাদা বিন্দু",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখের রেটিনার (Retina) একটি নির্দিষ্ট অংশ রয়েছে যেখানে অপটিক স্নায়ু (Optic nerve) চোখ ছেড়ে মস্তিষ্কে যায়। এই অংশে কোনো আলোক সংবেদী রড কোষ (Rod cells) বা কোণ কোষ (Cone cells) থাকে না, তাই এই অংশটি কোনো আলো সনাক্ত করতে পারে না। এই অংশকে <strong>অন্ধ বিন্দু (Blind spot)</strong> বা অপটিক ডিস্ক (Optic disc) বলা হয়।</p>",
+        },
+        {
+          id: 4,
+          question: "চোখের লেন্স ও রেটিনার মধ্যে অবস্থান করে নিচের কোনটি?",
+          options: {
+            a: "ভিট্রিয়াস হিউমার",
+            b: "হিমোসিল",
+            c: "কর্নিয়া",
+            d: "অ্যাকুয়াস হিউমার",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখের লেন্স (Lens) এবং রেটিনার (Retina) মধ্যবর্তী বৃহৎ গহ্বরটি একটি জেলি-সদৃশ স্বচ্ছ পদার্থ দ্বারা পূর্ণ থাকে, যাকে <strong>ভিট্রিয়াস হিউমার (Vitreous humor)</strong> বলা হয়। এটি চোখের আকার বজায় রাখতে এবং রেটিনাকে তার স্থানে ধরে রাখতে সাহায্য করে। অ্যাকুয়াস হিউমার লেন্স ও কর্নিয়ার মাঝে থাকে।</p>",
+        },
+        {
+          id: 5,
+          question: "চোখের স্ক্লেরার রঙ কী?",
+          options: {
+            a: "কালো",
+            b: "সাদা",
+            c: "হালকা হলুদ",
+            d: "লাল",
+          },
+          correct: "b",
+          explanation:
+            "<p>চোখের বাইরের এবং সবচেয়ে শক্ত ও তন্তুময় স্তরটি হলো স্ক্লেরা (Sclera)। এটি চোখের আকৃতি বজায় রাখে এবং অভ্যন্তরীণ কাঠামোকে রক্ষা করে। স্ক্লেরার রঙ সাধারণত <strong>সাদা</strong> হয়, তাই এটি চোখের সাদা অংশ হিসেবে পরিচিত।</p>",
+        },
+        {
+          id: 6,
+          question: "পিউপিলের অবস্থান কোথায়?",
+          options: {
+            a: "রেটিনার পশ্চাতে",
+            b: "আইরিশের পশ্চাতে",
+            c: "আইরিশের মধ্যবর্তী স্থানে",
+            d: "কোরয়েডের নিচে",
+          },
+          correct: "c",
+          explanation:
+            "<p>পিউপিল (Pupil) হলো চোখের আইরিশের (Iris) কেন্দ্রে অবস্থিত একটি কালো ছিদ্র। এটি <strong>আইরিশের মধ্যবর্তী স্থানে</strong> অবস্থিত এবং এর আকার নিয়ন্ত্রিত হয় আইরিশের পেশি দ্বারা, যা চোখে প্রবেশ করা আলোর পরিমাণ নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 7,
+          question: "কোনটি অক্ষি পেশি ?",
+          options: {
+            a: "এক্সটারনাল অবলিক",
+            b: "সুপিরিয়র রেক্টাস",
+            c: "ইন্টারনাল অবলিক",
+            d: "এক্সটারনাল রেক্টাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>অক্ষিগোলকের (Eyeball) সঞ্চালনের জন্য মোট ছয়টি পেশি দায়ী, যাদেরকে এক্সট্রাঅকুলার পেশি (Extraocular muscles) বলা হয়। এই পেশিগুলো হলো চারটি রেক্টাস পেশি (Superior, Inferior, Medial, Lateral Rectus) এবং দুটি অবলিক পেশি (Superior and Inferior Oblique)। প্রদত্ত বিকল্পগুলোর মধ্যে <strong>সুপিরিয়র রেক্টাস (Superior Rectus)</strong> একটি অক্ষি পেশি যা অক্ষিগোলককে উপরের দিকে ঘোরাতে সাহায্য করে।</p>",
+        },
+        {
+          id: 8,
+          question: "মেলানিন রঞ্জকে রঞ্জিত স্তর নিম্নের কোনটি?",
+          options: {
+            a: "স্ক্লেরা",
+            b: "কোরয়েড",
+            c: "সিলিয়ারী বডি",
+            d: "সাসপেন্সরি লিগামেন্ট",
+          },
+          correct: "b",
+          explanation:
+            "<p>চোখের মধ্যে <strong>মেলানিন (Melanin)</strong> রঞ্জকে রঞ্জিত স্তরটি হলো <strong>কোরয়েড (Choroid)</strong>। কোরয়েড স্তরটি স্ক্লেরা এবং রেটিনার মাঝখানে অবস্থিত। এর প্রধান কাজ হলো চোখের ভেতরের অংশে আলো শোষণ করা যাতে আলোর প্রতিফলন না ঘটে এবং পুষ্টি সরবরাহ করা। এই মেলানিন রঞ্জকই কোরয়েডকে কালো দেখায়।</p>",
+        },
+        {
+          id: 9,
+          question: "নিম্নের কোনটি চোখের একমাত্র আলোক সংবেদী অংশ?",
+          options: {
+            a: "পিউপিল",
+            b: "আইরিশ",
+            c: "রেটিনা",
+            d: "অন্ধবিন্দু",
+          },
+          correct: "c",
+          explanation:
+            "<p>চোখের মধ্যে আলোকরশ্মি গ্রহণ করে এবং সেগুলোকে স্নায়বিক সংকেতে রূপান্তরিত করে মস্তিষ্কে পাঠানোর একমাত্র অংশ হলো <strong>রেটিনা (Retina)</strong>। রেটিনাতে রড কোষ (Rod cells) এবং কোণ কোষ (Cone cells) নামক আলোক সংবেদী কোষ থাকে, যা আলোকে শনাক্ত করতে পারে। পিউপিল আলো প্রবেশ নিয়ন্ত্রণ করে, আইরিশ পিউপিলের আকার নিয়ন্ত্রণ করে, এবং অন্ধবিন্দু আলোক সংবেদী নয়।</p>",
+        },
+        {
+          id: 10,
+          question: "বস্তুর প্রতিবিম্ব তৈরি করে কোনটি?",
+          options: {
+            a: "রেটিনা",
+            b: "কর্নিয়া",
+            c: "স্ক্লেরা",
+            d: "আইরিশ",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখে আলো প্রবেশ করার পর কর্নিয়া, অ্যাকুয়াস হিউমার, লেন্স এবং ভিট্রিয়াস হিউমারের মধ্য দিয়ে প্রতিসরিত হয়ে <strong>রেটিনা (Retina)</strong>-তে বস্তুর প্রতিবিম্ব তৈরি হয়। রেটিনায় অবস্থিত আলোক সংবেদী কোষগুলো এই প্রতিবিম্বকে স্নায়ু সংকেতে রূপান্তরিত করে মস্তিষ্কে পাঠায়।</p>",
+        },
+        {
+          id: 11,
+          question: "চোখের বিভিন্ন অংশে পুষ্টি যোগায় কোনটি?",
+          options: {
+            a: "কর্নিয়া",
+            b: "রেটিনা",
+            c: "স্ক্লেরা",
+            d: "কোরয়েড",
+          },
+          correct: "d",
+          explanation:
+            "<p>চোখের <strong>কোরয়েড (Choroid)</strong> স্তরটি রক্তনালী দ্বারা সমৃদ্ধ এবং এটি চোখের বিভিন্ন অংশে, বিশেষ করে রেটিনার আলোক সংবেদী কোষগুলোতে <strong>পুষ্টি এবং অক্সিজেন সরবরাহ করে</strong>। এটি চোখের রক্ত সরবরাহ ব্যবস্থার একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 12,
+          question: "চোখের অশ্রু নিঃসৃত হয় কোন গ্রন্থি থেকে?",
+          options: {
+            a: "হার্ডেরিয়ান গ্রন্থি",
+            b: "মেবোমিয়ান গ্রন্থি",
+            c: "ল্যাক্রাইমাল গ্রন্থি",
+            d: "সিবেসিয়াস গ্রন্থি",
+          },
+          correct: "c",
+          explanation:
+            "<p>চোখের <strong>অশ্রু (Tears)</strong> নিঃসৃত হয় <strong>ল্যাক্রাইমাল গ্রন্থি (Lacrimal gland)</strong> থেকে। এই গ্রন্থিটি প্রতিটি চোখের উপরের বাইরের কোণে অবস্থিত। অশ্রু চোখকে পরিষ্কার, আর্দ্র এবং জীবাণুমুক্ত রাখতে সাহায্য করে।</p>",
+        },
+        {
+          id: 13,
+          question: "মানব চোখের অংশ কোনটি?",
+          options: {
+            a: "ভিত্তিপর্দা",
+            b: "র‍্যাবডোম",
+            c: "পীতবিন্দু",
+            d: "কর্নিয়াজেন কোষ",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানব চোখের একটি গুরুত্বপূর্ণ অংশ হলো <strong>পীতবিন্দু (Yellow spot)</strong> বা ম্যাকুলা লুটিয়া (Macula lutea)। এটি রেটিনার একটি ডিম্বাকৃতি রঙ্গকযুক্ত এলাকা যা তীক্ষ্ণ এবং কেন্দ্রীয় দৃষ্টির জন্য দায়ী। ভিত্তিপর্দা, র‍্যাবডোম, এবং কর্নিয়াজেন কোষ মানব চোখের অংশ নয়।</p>",
+        },
+        {
+          id: 14,
+          question: "মানুষের অক্ষিগোলকের স্তর কয়টি?",
+          options: {
+            a: "১",
+            b: "২",
+            c: "৩",
+            d: "৮",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের অক্ষিগোলক (Eyeball) তিনটি প্রধান স্তরে গঠিত: <strong>বাইরের তন্তুময় স্তর (স্ক্লেরা ও কর্নিয়া), মধ্যবর্তী সংবহনকারী স্তর (কোরয়েড, সিলিয়ারি বডি ও আইরিশ), এবং ভেতরের স্নায়বিক স্তর (রেটিনা)</strong>। সুতরাং, অক্ষিগোলকের মোট <strong>৩টি</strong> স্তর রয়েছে।</p>",
+        },
+        {
+          id: 15,
+          question: "কোনটি মানব চোখের প্রতিসরণ মাধ্যম নয়?",
+          options: {
+            a: "কর্নিয়া",
+            b: "পিউপিল",
+            c: "অ্যাকুয়াস হিউমার",
+            d: "ভিট্রিয়াস হিউমার",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানব চোখের প্রতিসরণ মাধ্যম (Refractive media) হলো সেই স্বচ্ছ কাঠামো যা আলোকরশ্মিকে প্রতিসরিত করে রেটিনার উপর ফোকাস করতে সাহায্য করে। এগুলো হলো: কর্নিয়া (Cornea), অ্যাকুয়াস হিউমার (Aqueous humor), লেন্স (Lens), এবং ভিট্রিয়াস হিউমার (Vitreous humor)। <strong>পিউপিল (Pupil)</strong> হলো আইরিশের কেন্দ্রে একটি ছিদ্র যা চোখে প্রবেশ করা আলোর পরিমাণ নিয়ন্ত্রণ করে, কিন্তু এটি নিজেই কোনো প্রতিসরণ মাধ্যম নয়।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "কোন র‍্যাক্টাস পেশি অক্ষিগোলককে উপরের দিকে ঘুরতে সহায়তা করে?",
+          options: {
+            a: "মিডিয়াল",
+            b: "ল্যাটারাল",
+            c: "সুপিরিয়র",
+            d: "ইনফিরিয়র",
+          },
+          correct: "c",
+          explanation:
+            "<p>অক্ষিগোলকের (Eyeball) নড়াচড়ার জন্য দায়ী ছয়টি পেশির মধ্যে চারটি হলো রেক্টাস পেশি। <strong>সুপিরিয়র রেক্টাস (Superior Rectus)</strong> পেশি অক্ষিগোলককে <strong>উপরের দিকে ঘুরতে</strong> এবং কিছুটা ভিতরের দিকে ঘোরাতে সহায়তা করে। মিডিয়াল রেক্টাস চোখকে ভিতরের দিকে, ল্যাটারাল রেক্টাস বাইরের দিকে, এবং ইনফিরিয়র রেক্টাস নিচের দিকে ঘোরাতে সাহায্য করে।</p>",
+        },
+        {
+          id: 17,
+          question: "ভিট্রিয়াস হিউমারের ক্ষেত্রে কোনটি সঠিক?",
+          options: {
+            a: "অক্ষিগোলকের আকৃতি বজায় রাখে",
+            b: "লেন্স ও কর্নিয়ার পুষ্টি জোগায়",
+            c: "আইরিশ ও লেন্সের মধ্যবর্তী গহ্বর",
+            d: "গহ্বরটি পানির মতো তরলে পূর্ণ",
+          },
+          correct: "a",
+          explanation:
+            "<p>ভিট্রিয়াস হিউমার (Vitreous humor) হলো একটি স্বচ্ছ, জেলি-সদৃশ পদার্থ যা লেন্স এবং রেটিনার মধ্যবর্তী বড় গহ্বরকে পূর্ণ করে রাখে। এর প্রধান কাজ হলো <strong>অক্ষিগোলকের আকৃতি বজায় রাখা</strong> এবং রেটিনাকে তার জায়গায় ধরে রাখা। লেন্স ও কর্নিয়ার পুষ্টি অ্যাকুয়াস হিউমার দ্বারা সরবরাহ হয়।</p>",
+        },
+        {
+          id: 18,
+          question: "রড কোষের অনুপস্থিতিতে চোখে কী ধরনের ত্রুটি দেখা যায়?",
+          options: {
+            a: "অন্ধত্ব",
+            b: "বর্ণান্ধতা",
+            c: "রাতকানা",
+            d: "মাইওপিয়া",
+          },
+          correct: "c",
+          explanation:
+            "<p>রড কোষ (Rod cells) হলো রেটিনার আলোক সংবেদী কোষ যা ম্লান আলোতে দৃষ্টি এবং রাতের দৃষ্টির জন্য দায়ী। <strong>রড কোষের অনুপস্থিতি বা কার্যকারিতা হ্রাস পেলে রাতকানা (Night blindness)</strong> নামক দৃষ্টি ত্রুটি দেখা যায়, যেখানে ব্যক্তি কম আলোতে বা রাতে দেখতে সমস্যা অনুভব করে। বর্ণান্ধতা কোণ কোষের সমস্যার কারণে হয়, এবং মাইওপিয়া হলো স্বল্পদৃষ্টি।</p>",
+        },
+        {
+          id: 19,
+          question: "মানুষের চোখের আনুষঙ্গিক অংশ কোনটি?",
+          options: {
+            a: "আইরিশ",
+            b: "সিলিয়ারি বডি",
+            c: "কনজাংক্টিভা",
+            d: "সাসপেন্সরি লিগামেন্ট",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের চোখের আনুষঙ্গিক অংশ (Accessory structures) হলো সেই অংশগুলো যা চোখকে সুরক্ষা প্রদান করে বা এর কার্যকারিতায় সাহায্য করে কিন্তু সরাসরি দৃষ্টিতে অংশগ্রহণ করে না। <strong>কনজাংক্টিভা (Conjunctiva)</strong> হলো চোখের পাতার ভেতরের পৃষ্ঠ এবং স্ক্লেরার সামনের অংশকে আবৃতকারী একটি পাতলা, স্বচ্ছ ঝিল্লি। এটি চোখকে রক্ষা করে এবং পিচ্ছিল রাখে। আইরিশ, সিলিয়ারি বডি এবং সাসপেন্সরি লিগামেন্ট চোখের অভ্যন্তরের প্রধান গঠন।</p>",
+        },
+        {
+          id: 20,
+          question: "চোখের বাইরের সাদা, অস্বচ্ছ ও তন্তুময় স্তরটির নাম কী?",
+          options: {
+            a: "কনজাংক্টিভা",
+            b: "স্ক্লেরা",
+            c: "কোরয়েড",
+            d: "রেটিনা",
+          },
+          correct: "b",
+          explanation:
+            "<p>চোখের বাইরের দিকে অবস্থিত সাদা, অস্বচ্ছ এবং তন্তুময় স্তরটির নাম হলো <strong>স্ক্লেরা (Sclera)</strong>। এটি চোখের অক্ষিগোলকের বেশিরভাগ অংশকে আবৃত করে রাখে এবং চোখের আকৃতি ও দৃঢ়তা বজায় রাখতে সাহায্য করে। স্ক্লেরার সামনের স্বচ্ছ অংশকে কর্নিয়া বলে।</p>",
+        },
+        {
+          id: 21,
+          question: "রোডোপসিন উপস্থিত থাকে কোন কোষে?",
+          options: {
+            a: "শিখা কোষে",
+            b: "কোণ কোষে",
+            c: "স্নায়ু কোষে",
+            d: "রড কোষে",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>রোডোপসিন (Rhodopsin)</strong> হলো এক ধরনের আলোক সংবেদী রঞ্জক যা <strong>রড কোষে (Rod cells)</strong> উপস্থিত থাকে। এই রঞ্জক ম্লান আলোতে দেখতে সাহায্য করে এবং রাতের দৃষ্টির জন্য অপরিহার্য। কোণ কোষে ফটোসিন (Photopsin) নামক রঞ্জক থাকে যা রঙীন দৃষ্টির জন্য দায়ী।</p>",
+        },
+        {
+          id: 22,
+          question: "পিউপিলের কাজ নিচের কোনটি?",
+          options: {
+            a: "অ্যাকুয়াস হিউমার উৎপন্ন করা",
+            b: "ধূলাবালি থেকে চোখকে রক্ষা করা",
+            c: "চক্ষু গোলকের ভিতর আলো প্রবেশ নিয়ন্ত্রণ করা",
+            d: "লাইসোজাইম এনজাইম ক্ষরণ",
+          },
+          correct: "c",
+          explanation:
+            "<p>পিউপিল (Pupil) হলো চোখের আইরিশের (Iris) কেন্দ্রে অবস্থিত একটি খোলা অংশ। এর প্রধান কাজ হলো <strong>চক্ষু গোলকের ভিতর আলো প্রবেশ নিয়ন্ত্রণ করা</strong>। আইরিশের পেশিগুলো সংকুচিত বা প্রসারিত হয়ে পিউপিলের আকার পরিবর্তন করে, যার ফলে চোখে প্রবেশ করা আলোর পরিমাণ নিয়ন্ত্রিত হয়।</p>",
+        },
+        {
+          id: 23,
+          question: "স্ক্লেরার স্বচ্ছ অংশের নাম কী?",
+          options: {
+            a: "লেন্স",
+            b: "কর্নিয়া",
+            c: "আইরিস",
+            d: "পিউপিল",
+          },
+          correct: "b",
+          explanation:
+            "<p>স্ক্লেরা (Sclera) হলো চোখের বাইরের সাদা, অস্বচ্ছ এবং তন্তুময় স্তর। এই স্ক্লেরারই সামনের দিকে অবস্থিত স্বচ্ছ এবং উত্তল অংশটির নাম <strong>কর্নিয়া (Cornea)</strong>। কর্নিয়া চোখের মধ্যে আলো প্রবেশ করার প্রথম প্রধান প্রতিসারক মাধ্যম হিসেবে কাজ করে।</p>",
+        },
+        {
+          id: 24,
+          question: "দুইটি চোখের মধ্যবর্তী স্থানে অবস্থিত সাইনাসের নাম কী?",
+          options: {
+            a: "ম্যাক্সিলারি সাইনাস",
+            b: "ফ্রন্টাল সাইনাস",
+            c: "এথময়ডাল সাইনাস",
+            d: "স্ফেনয়ডাল সাইনাস",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুইটি চোখের মধ্যবর্তী স্থানে (নাকের উপরের অংশে, চোখের ঠিক পিছনে) অবস্থিত সাইনাসগুলো হলো <strong>এথময়ডাল সাইনাস (Ethmoidal sinuses)</strong>। এগুলি এথময়ড হাড়ের মধ্যে অবস্থিত। ম্যাক্সিলারি সাইনাস গালের হাড়ে, ফ্রন্টাল সাইনাস কপালের হাড়ে এবং স্ফেনয়ডাল সাইনাস মস্তিষ্কের গভীরে অবস্থিত।</p>",
+        },
+        {
+          id: 25,
+          question: "উদ্দীপকের গ্রাহক প্রতিক্রিয়ার ক্ষেত্রে সঠিক গতিপথ কোনটি?",
+          options: {
+            a: "কর্নিয়া → লেন্স → ভিট্রিয়াস হিউমার → অ্যাকুয়াস হিউমার → রেটিনা",
+            b: "কর্নিয়া → অ্যাকুয়াস হিউমার → লেন্স → ভিট্রিয়াস হিউমার → রেটিনা",
+            c: "কর্নিয়া → ভিট্রিয়াস হিউমার → লেন্স → অ্যাকুয়াস হিউমার → রেটিনা",
+            d: "কর্নিয়া → লেন্স → অ্যাকুয়াস হিউমার → ভিট্রিয়াস হিউমার → রেটিনা",
+          },
+          correct: "b",
+          explanation:
+            "<p>আলো যখন চোখে প্রবেশ করে এবং রেটিনায় প্রতিবিম্ব তৈরি করে, তখন এটি একটি নির্দিষ্ট গতিপথ অনুসরণ করে। সঠিক গতিপথটি হলো: <strong>কর্নিয়া (Cornea) → অ্যাকুয়াস হিউমার (Aqueous humor) → লেন্স (Lens) → ভিট্রিয়াস হিউমার (Vitreous humor) → রেটিনা (Retina)</strong>।</p>",
+        },
+        {
+          id: 26,
+          question: "চোখের রেটিনায় কয় ধরনের কোষ থাকে?",
+          options: {
+            a: "২",
+            b: "৩",
+            c: "৮",
+            d: "৪",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখের রেটিনায় (Retina) প্রধানত <strong>২ ধরনের</strong> আলোক সংবেদী কোষ থাকে: <strong>রড কোষ (Rod cells) এবং কোণ কোষ (Cone cells)</strong>। রড কোষ ম্লান আলোতে এবং রাতের দৃষ্টির জন্য দায়ী, যখন কোণ কোষ উজ্জ্বল আলোতে এবং রঙীন দৃষ্টির জন্য দায়ী।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "মানুষের চোখের রড কোষগুলোতে কোন ভিটামিনের উপস্থিতি পাওয়া যায়?",
+          options: {
+            a: "ভিটামিন-ই",
+            b: "ভিটামিন-এ",
+            c: "ভিটামিন-ডি",
+            d: "ভিটামিন-কে",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের চোখের রড কোষগুলোতে <strong>ভিটামিন-এ (Vitamin A)</strong> এর উপস্থিতি পাওয়া যায়। ভিটামিন-এ রোডোপসিন (Rhodopsin) নামক আলোক সংবেদী রঞ্জক তৈরিতে অপরিহার্য, যা রাতের দৃষ্টির জন্য গুরুত্বপূর্ণ। ভিটামিন-এ এর অভাবে রাতকানা রোগ হতে পারে।</p>",
+        },
+        {
+          id: 28,
+          question: "চোখের লেন্সে পরিমিত আলো প্রবেশ নিয়ন্ত্রণ করে?",
+          options: {
+            a: "কর্নিয়া",
+            b: "আইরিশ",
+            c: "রেটিনা",
+            d: "সিলিয়ারি বডি",
+          },
+          correct: "b",
+          explanation:
+            "<p>চোখের লেন্সে (Lens) পরিমিত আলো প্রবেশ নিয়ন্ত্রণ করে <strong>আইরিশ (Iris)</strong>। আইরিশ হলো চোখের রঙীন অংশ যার কেন্দ্রে পিউপিল (Pupil) থাকে। আইরিশের পেশিগুলো সংকুচিত বা প্রসারিত হয়ে পিউপিলের আকার পরিবর্তন করে, যার ফলে চোখে প্রবেশ করা আলোর পরিমাণ নিয়ন্ত্রিত হয়।</p>",
+        },
+        {
+          id: 29,
+          question: "রেটিনায় বস্তুর কী ধরনের প্রতিবিম্ব গঠিত হয়?",
+          options: {
+            a: "উল্টা",
+            b: "সোজা",
+            c: "বাঁকা",
+            d: "তীর্যক",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখের লেন্স একটি উত্তল লেন্সের মতো কাজ করে এবং এটি বস্তুর একটি <strong>উল্টা (Inverted)</strong> এবং ছোট প্রতিবিম্ব রেটিনায় তৈরি করে। মস্তিষ্ক পরবর্তীতে এই উল্টা প্রতিবিম্বকে সোজা করে ব্যাখ্যা করে।</p>",
+        },
+        {
+          id: 30,
+          question: "চোখের কোন স্তর স্নায়ুকোষ দিয়ে গঠিত?",
+          options: {
+            a: "কর্নিয়া",
+            b: "কোরয়েড",
+            c: "রেটিনা",
+            d: "স্ক্লেরা",
+          },
+          correct: "c",
+          explanation:
+            "<p>চোখের <strong>রেটিনা (Retina)</strong> হলো একটি আলোক সংবেদী স্তর যা বিভিন্ন ধরনের <strong>স্নায়ুকোষ</strong> দিয়ে গঠিত। এই কোষগুলোর মধ্যে রয়েছে রড কোষ, কোণ কোষ, বাইপোলার কোষ, গ্যাংলিয়ন কোষ এবং অ্যামাক্রাইন কোষ। এই স্নায়ুকোষগুলো আলোক সংকেত গ্রহণ করে এবং সেগুলোকে বৈদ্যুতিক সংকেতে রূপান্তরিত করে অপটিক স্নায়ুর মাধ্যমে মস্তিষ্কে প্রেরণ করে।</p>",
+        },
+        {
+          id: 31,
+          question: "কোরয়েড কালো দেখানোর কারণ?",
+          options: {
+            a: "মেলানিন রঞ্জক",
+            b: "রডকোষ",
+            c: "কোণকোষ",
+            d: "হিমোগ্লোবিন",
+          },
+          correct: "a",
+          explanation:
+            "<p>চোখের কোরয়েড (Choroid) স্তরটি <strong>মেলানিন (Melanin) রঞ্জকে</strong> সমৃদ্ধ থাকার কারণে কালো দেখায়। এই মেলানিন রঞ্জক চোখে প্রবেশ করা অতিরিক্ত আলো শোষণ করে এবং আলোর অনিয়মিত প্রতিফলন রোধ করে, যার ফলে একটি পরিষ্কার প্রতিবিম্ব তৈরি হতে সাহায্য করে।</p>",
+        },
+        {
+          id: 32,
+          question: "চক্ষুপেশি কয় জোড়া?",
+          options: {
+            a: "৩",
+            b: "৫",
+            c: "৬",
+            d: "৮",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের প্রতিটি অক্ষিগোলককে (Eyeball) নড়াচড়া করানোর জন্য মোট <strong>৬ জোড়া (অর্থাৎ ১২টি)</strong> এক্সট্রাঅকুলার পেশি (Extraocular muscles) থাকে। এর মধ্যে ৪টি রেক্টাস পেশি (Superior, Inferior, Medial, Lateral) এবং ২টি অবলিক পেশি (Superior, Inferior Oblique) রয়েছে।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "কোন মেমব্রেন স্ক্যালা ভেস্টিবুলি ও স্ক্যালা মিডিয়াকে পৃথক করেছে?",
+          options: {
+            a: "রেসনার’স",
+            b: "টিমপেনিক",
+            c: "লোবিগুলার",
+            d: "বেসিলার",
+          },
+          correct: "a",
+          explanation:
+            "<p>কানের ককলিয়ার (Cochlea) মধ্যে অবস্থিত তিনটি প্রধান প্রকোষ্ঠ রয়েছে: স্ক্যালা ভেস্টিবুলি (Scala vestibuli), স্ক্যালা মিডিয়া (Scala media) বা ককলিয়ার ডাক্ট (Cochlear duct), এবং স্ক্যালা টিমপানি (Scala tympani)। <strong>রেসনার’স মেমব্রেন (Reissner's membrane)</strong> বা ভেস্টিবুলার মেমব্রেন হলো সেই পাতলা পর্দা যা <strong>স্ক্যালা ভেস্টিবুলি এবং স্ক্যালা মিডিয়াকে পৃথক করেছে</strong>। বেসিলার মেমব্রেন স্ক্যালা মিডিয়াকে স্ক্যালা টিমপানি থেকে পৃথক করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
